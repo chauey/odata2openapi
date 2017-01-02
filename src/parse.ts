@@ -7,6 +7,9 @@ import { EntityProperty } from './EntityProperty';
 import { EnumType } from './EnumType';
 import { EnumMember } from './EnumMember';
 
+import { Schema } from './Schema';
+
+
 function parseEntitySets(namespace: string, entityContainer: any, entityTypes: any): Array<EntitySet> {
   return entityContainer['EntitySet'].map(entitySet => {
     const type = entitySet['$']['EntityType'].split('.').pop();
@@ -95,8 +98,8 @@ function parseMember(member: any) {
   };
 }
 
-function parse(xml: string): Promise<{ entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }> {
-  return new Promise<{ entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }>((resolve, reject) => {
+function parse(xml: string): Promise<{ schema: Schema, entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }> {
+  return new Promise<{ schema: Schema, entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }>((resolve, reject) => {
     xml2js.parseString(xml, (error, metadata) => {
       if (error) {
         return reject(error);
@@ -104,7 +107,7 @@ function parse(xml: string): Promise<{ entitySets: Array<EntitySet>, enumTypes: 
 
       const [dataServices] = metadata['edmx:Edmx']['edmx:DataServices']
 
-      const schemas = dataServices['Schema'];
+      const schemas: Schema[] = dataServices['Schema'];
 
       const entityContainerSchema = schemas.find(schema => schema['EntityContainer'])
 
@@ -130,8 +133,9 @@ function parse(xml: string): Promise<{ entitySets: Array<EntitySet>, enumTypes: 
           enumTypes2.push(...parseEnumTypes(namespace, schema, enumTypes));
         }
 
+        resolve({ schema: schema, entitySets: entitySets, enumTypes: enumTypes2 });
+
       });
-      resolve({ entitySets: entitySets, enumTypes: enumTypes2 });
     });
   });
 }

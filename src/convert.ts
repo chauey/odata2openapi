@@ -245,14 +245,14 @@ function definitions(entitySets: Array<EntitySet>): Definitions {
   return definitions;
 }
 
-function xEnums(enumsArray: Array<EnumType>, namespace: string): any { //Enums {
+function xEnums(schema: Schema, enumsArray: Array<EnumType>): any { //Enums {
   const enums = {//: Enums = {
 
   };
   //console.log(enumsArray);
   enumsArray.forEach(enumType => {
     //console.log(enumType);
-    const type = `${namespace}.${enumType.name}`;
+    const type = `${schema['$']['Namespace']}.${enumType.name}`;
     enums[type] = {};
     enumType.members.forEach(
       member =>
@@ -335,7 +335,7 @@ function filter(entitySets: Array<EntitySet>, wanted: Array<string>): Array<Enti
   return entitySets.filter(entitySet => wanted.includes(entitySet.name))
 }
 
-function convert(sets: { entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }, options: Options): Swagger {
+function convert(sets: { schema: Schema, entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }, options: Options): Swagger {
   registeredOperations.clear();
   return {
     swagger: '2.0',
@@ -349,7 +349,7 @@ function convert(sets: { entitySets: Array<EntitySet>, enumTypes: Array<EnumType
     paths: paths(options.include ? filter(sets.entitySets, options.include) : sets.entitySets),
     definitions: definitions(sets.entitySets),
 
-    'x-enums': xEnums(sets.enumTypes, 'testNameSpace'),
+    'x-enums': xEnums(sets.schema, sets.enumTypes),
 
     'x-projections': null,
     'x-uiViews': null,

@@ -11,6 +11,10 @@ import { EntityType } from './EntityType';
 import { EntityProperty } from './EntityProperty';
 import { Parameter } from './Parameter';
 
+import { Enums } from './Enums'
+import { EnumType } from './EnumType'
+import { EnumMember } from './EnumMember'
+
 const defaultResponse = {
   description: 'Unexpected error',
   schema: {
@@ -241,6 +245,24 @@ function definitions(entitySets: Array<EntitySet>): Definitions {
   return definitions;
 }
 
+function xEnums(enumsArray: Array<EnumType>, namespace: string): any { //Enums {
+  const enums = {//: Enums = {
+
+  };
+  //console.log(enumsArray);
+  enumsArray.forEach(enumType => {
+    //console.log(enumType);
+    const type = `${namespace}.${enumType.name}`;
+    enums[type] = {};
+    enumType.members.forEach(
+      member =>
+        enums[type][member.name] = { Name: member.name, Value: member.value }
+    ); /////schema(enumSet.enumType);
+  });
+
+  return enums;
+}
+
 function schema(entityType: EntityType): Schema {
   const required = entityType.properties.filter(property => property.required).map(property => property.name);
 
@@ -256,8 +278,8 @@ function schema(entityType: EntityType): Schema {
   return schema;
 }
 
-function properties(properties: Array<EntityProperty>): {[name: string]: Property} {
-  const result: {[name:string]: Property} = {};
+function properties(properties: Array<EntityProperty>): { [name: string]: Property } {
+  const result: { [name: string]: Property } = {};
 
   properties.forEach(({name, type}) => {
     result[name] = property(type);
@@ -313,9 +335,8 @@ function filter(entitySets: Array<EntitySet>, wanted: Array<string>): Array<Enti
   return entitySets.filter(entitySet => wanted.includes(entitySet.name))
 }
 
-function convert(entitySets: Array<EntitySet>, options: Options): Swagger {
+function convert(sets: { entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }, options: Options): Swagger {
   registeredOperations.clear();
-
   return {
     swagger: '2.0',
     host: options.host,
@@ -325,8 +346,13 @@ function convert(entitySets: Array<EntitySet>, options: Options): Swagger {
       title: 'OData Service',
       version: '0.0.1'
     },
-    paths: paths(options.include ? filter(entitySets, options.include) : entitySets),
-    definitions: definitions(entitySets)
+    paths: paths(options.include ? filter(sets.entitySets, options.include) : sets.entitySets),
+    definitions: definitions(sets.entitySets),
+
+    'x-enums': xEnums(sets.enumTypes, 'testNameSpace'),
+
+    'x-projections': null,
+    'x-uiViews': null,
   };
 }
 

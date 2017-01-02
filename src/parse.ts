@@ -4,6 +4,9 @@ import { EntitySet } from './EntitySet';
 import { EntityType } from './EntityType';
 import { EntityProperty } from './EntityProperty';
 
+import { EnumType } from './EnumType';
+import { EnumMember } from './EnumMember';
+
 function parseEntitySets(namespace: string, entityContainer: any, entityTypes: any): Array<EntitySet> {
   return entityContainer['EntitySet'].map(entitySet => {
     const type = entitySet['$']['EntityType'].split('.').pop();
@@ -24,6 +27,7 @@ function parseEntitySet(namespace: string, entitySet: any, entityType: any): Ent
   }
 }
 
+
 function parseEntityType(entityType: any): EntityType {
   const result: EntityType = {
     name: entityType['$']['Name'],
@@ -35,6 +39,37 @@ function parseEntityType(entityType: any): EntityType {
   if (keys && keys.length > 0) {
     result.key = parseKey(keys[0], result.properties)
   }
+
+  return result;
+}
+
+
+function parseEnumTypes(namespace: string, schema: any, entityTypes: Array<EnumType>) {
+  //console.log(schema['EnumType']);
+  //return //schema['EnumType'].
+  return entityTypes.map(enumType => {
+    const type = enumType['$']['Name'].split('.').pop();
+
+    //const enumType = entityTypes.find(entity => entity['$']['Name'] == type);
+
+    // if (entityType) {
+    //   return parseEntitySet(namespace, entitySet, entityType);
+    // }
+    return parseEnumType(enumType);
+  });//s.filter(entitySet => !!entitySet);
+}
+
+function parseEnumType(enumType: any): EnumType {
+  const result: EnumType = {
+    name: enumType['$']['Name'],
+    members: enumType['Member'] ? enumType['Member'].map(parseMember) : []
+  };
+
+  //const keys = enumType['Key'];
+
+  // if (keys && keys.length > 0) {
+  //   result.key = parseKey(keys[0], result.properties)
+  // }
 
   return result;
 }
@@ -53,8 +88,15 @@ function parseProperty(property: any) {
   };
 }
 
-function parse(xml: string): Promise<Array<EntitySet>> {
-  return new Promise<Array<EntitySet>>((resolve, reject) => {
+function parseMember(member: any) {
+  return {
+    name: member['$']['Name'],
+    value: member['$']['Value']
+  };
+}
+
+function parse(xml: string): Promise<{ entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }> {
+  return new Promise<{ entitySets: Array<EntitySet>, enumTypes: Array<EnumType> }>((resolve, reject) => {
     xml2js.parseString(xml, (error, metadata) => {
       if (error) {
         return reject(error);
@@ -73,6 +115,7 @@ function parse(xml: string): Promise<Array<EntitySet>> {
       const [entityContainer] = entityContainerSchema['EntityContainer']
 
       const entitySets: Array<EntitySet> = [];
+      const enumTypes2: Array<EnumType> = [];
 
       schemas.forEach(schema => {
         if (schema['EntityType']) {
@@ -80,9 +123,15 @@ function parse(xml: string): Promise<Array<EntitySet>> {
           const entityTypes = schema['EntityType'];
           entitySets.push(...parseEntitySets(namespace, entityContainer, entityTypes));
         }
-      });
 
-      resolve(entitySets);
+        if (schema['EnumType']) {
+          const namespace = schema['$']['Namespace'];
+          const enumTypes = schema['EnumType'];
+          enumTypes2.push(...parseEnumTypes(namespace, schema, enumTypes));
+        }
+
+      });
+      resolve({ entitySets: entitySets, enumTypes: enumTypes2 });
     });
   });
 }

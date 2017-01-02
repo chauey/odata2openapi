@@ -16,4 +16,7 @@ export interface Swagger {
   definitions: Definitions;
   security?: Array<SecurityRequirement>;
   securityDefinitions?: SecurityDefinitions;
+  'x-enums'?: any;
+  'x-projections'?: any;
+  'x-uiViews'?: any;
 }
